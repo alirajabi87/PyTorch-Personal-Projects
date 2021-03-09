@@ -1,9 +1,3 @@
-# Uncomment if you have problem of downloading the MNIST Dataset
-# from six.moves import urllib
-# opener = urllib.request.build_opener()
-# opener.addheaders = [('User-agent', 'Mozilla/5.0')]
-# urllib.request.install_opener(opener)
-
 import torch
 import torchvision
 from torchvision import datasets, transforms
