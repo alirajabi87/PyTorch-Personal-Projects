@@ -1,11 +1,11 @@
 import torch
-import torchvision
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 import torch.nn as nn
 import torch.nn.functional as F
 
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.metrics import classification_report, confusion_matrix
 
@@ -73,6 +73,7 @@ class Model(nn.Module):
     def forward(self, X):
         return F.log_softmax(self.layers(X), dim=1)
 
+
 def PrintOutput(epoch, accuracy, loss, b=None, val_loss=None, verbose=2):
     if verbose == 0:
         pass
@@ -81,10 +82,11 @@ def PrintOutput(epoch, accuracy, loss, b=None, val_loss=None, verbose=2):
     elif verbose == 2:
         print(f"Epoch: {epoch:3}, Loss: {loss:6.4f}, Val_loss: {val_loss:6.4f}, Accuracy: {accuracy:6.2f}")
 
+
 def main():
     model = Model().cuda()
     # print(model.eval())
-    Epochs = 50
+    Epochs = 5
     train_losses = []
     test_losses = []
     train_accuracy = []
@@ -121,23 +123,21 @@ def main():
         train_losses.append(loss)
         train_accuracy.append(trn_crt)
 
-
         with torch.no_grad():
             for b, (X_test, y_test) in enumerate(test_loader):
                 X_test = X_test.cuda()
                 y_test = y_test.cuda()
                 test_pred = model(X_test)
                 test_loss = criterion(test_pred, y_test)
-                test_crt += (test_pred.argmax(axis = 1) == y_test).sum()
+                test_crt += (test_pred.argmax(axis=1) == y_test).sum()
         test_losses.append(test_loss)
         test_accuracy.append(test_crt)
-
 
         if verbose == 2:
             accuracy = trn_crt.item() / b
             PrintOutput(epoch=i, accuracy=accuracy, loss=loss, val_loss=test_loss, verbose=verbose)
 
-    print(f"Duration: {(time.time() - startTime)/60} min")
+    print(f"Duration: {(time.time() - startTime) / 60} min")
     plt.plot(train_losses, label="train_loss")
     plt.plot(test_losses, label="test_loss")
     plt.title("loss")
@@ -165,6 +165,16 @@ def main():
             y_val = y_val.cpu()
         print(classification_report(prediction.view(-1), y_val.view(-1)))
         print(f"Validation loss: {val_loss}")
+        df = pd.DataFrame(
+            confusion_matrix(y_pred=prediction.view(-1), y_true=y_val.view(-1)),
+            list(labels.values()),
+            list(labels.values())
+        )
+        import seaborn as sns
+        sns.heatmap(df, annot=True, fmt="d", cmap='BuGn')
+        plt.xlabel("predictions")
+        plt.ylabel("labels")
+        plt.show()
 
 
 if __name__ == '__main__':
