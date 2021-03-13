@@ -14,7 +14,6 @@ import numpy as np
 import warnings
 import time
 
-
 warnings.filterwarnings('ignore')
 
 
@@ -145,14 +144,14 @@ def main():
     if torch.cuda.is_available():
         model.cuda()
     # print(model)
-    EPOCHS = 3
+    EPOCHS = 15
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
     train_losses = []
     val_losses = []
     train_acc = []
     val_acc = []
-    startTime= time.time()
+    startTime = time.time()
     for i in range(EPOCHS):
         train_loss = 0
         train_crt = 0
@@ -197,7 +196,7 @@ def main():
     plt.legend()
     plt.show()
 
-    validation_loader = imageLoader(TestPath, train_data=False, batch_size=100)
+    validation_loader, _ = imageLoader(TestPath, train_data=False, batch_size=100)
     with torch.no_grad():
         for val_data, val_label in validation_loader:
             val_data, val_label = val_data.cuda(), val_label.cuda()
@@ -206,7 +205,7 @@ def main():
             prediction = y_pred.argmax(axis=1)
 
             prediction = prediction.cpu()
-            y_val = y_val.cpu()
+            val_label = val_label.cpu()
     print(classification_report(prediction.view(-1), val_label.view(-1)))
     df = pd.DataFrame(
         confusion_matrix(y_pred=prediction.view(-1), y_true=val_label.view(-1)),
@@ -218,7 +217,25 @@ def main():
     plt.ylabel("labels")
     plt.show()
     torch.save(model.state_dict(), 'Cats_Dogs_Classifier.pt')
-    print(f"Time: {(time.time()-startTime)/60} min")
+    print(f"Time: {(time.time() - startTime) / 60} min")
+
+    # #Single image Classification
+    # model.load_state_dict(torch.load("Cats_Dogs_classifier.pt"))
+    # img_index = 1000
+    # transform = transforms.Compose([
+    #     transforms.Resize(150),
+    #     transforms.CenterCrop(150),
+    #     transforms.ToTensor(),
+    #     transforms.Normalize(mean=(0.485, 0.465, 0.406), std=(0.229, 0.224, 0.225))
+    # ])
+    # test_data = datasets.ImageFolder(root=TestPath, transform=transform)
+    # im = inv_transform(test_data[img_index][0])
+    # plt.imshow(np.transpose(im, (1,2,0)))
+    # plt.show()
+    # model.eval()
+    # with torch.no_grad():
+    #     new_pred = model(test_data[img_index][0].view(1, 3, 150, 150).cuda()).argmax()
+    # print(classes_name[new_pred.item()])
 
 
 if __name__ == '__main__':
