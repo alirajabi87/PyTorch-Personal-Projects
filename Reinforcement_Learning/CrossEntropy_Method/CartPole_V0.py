@@ -93,28 +93,35 @@ if __name__ == '__main__':
     Criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(net.parameters(), lr=0.001)
     writer = SummaryWriter(comment="-cartpole")
+    train = False
+    if train:
+        for iter_no, batch in enumerate(iterate_batches(env=env, net=net, batch_size=BATCH_SIZE)):
 
-    for iter_no, batch in enumerate(iterate_batches(env=env, net=net, batch_size=BATCH_SIZE)):
+            obs_v, acts_v, reward_b, reward_m = filter_batch(batch=batch, percentile=PERCENTILE)
+            optimizer.zero_grad()
+            action_scores_v = net(obs_v)
 
-        obs_v, acts_v, reward_b, reward_m = filter_batch(batch=batch, percentile=PERCENTILE)
-        optimizer.zero_grad()
-        action_scores_v = net(obs_v)
+            loss_v = Criterion(action_scores_v, acts_v)
+            loss_v.backward()
+            optimizer.step()
 
-        loss_v = Criterion(action_scores_v, acts_v)
-        loss_v.backward()
-        optimizer.step()
+            print(f"{iter_no}, loss= {loss_v.item():6.3f}, reward_mean= {reward_m:3.1f}, "
+                  f"reward_boundary= {reward_b:3.1f}")
 
-        print(f"{iter_no}, loss= {loss_v.item():6.3f}, reward_mean= {reward_m:3.1f}, "
-              f"reward_boundary= {reward_b:3.1f}")
+            writer.add_scalar("loss", loss_v.item(), iter_no)
+            writer.add_scalar("reward_bound", reward_b, iter_no)
+            writer.add_scalar("reward_mean", reward_m, iter_no)
 
-        writer.add_scalar("loss", loss_v.item(), iter_no)
-        writer.add_scalar("reward_bound", reward_b, iter_no)
-        writer.add_scalar("reward_mean", reward_m, iter_no)
+            if reward_m > 195:
+                print("solved")
+                torch.save(net.state_dict(), "Cartpole-v0.pt")
+                break
+            writer.close()
+    else:
+        print("Loading the model...!")
+        net.load_state_dict(torch.load("Cartpole-v0.pt"))
 
-        if reward_m > 195:
-            print("solved")
-            break
-        writer.close()
+
     sm = nn.Softmax(dim=1)
     with torch.no_grad():
         iter_no = 0
