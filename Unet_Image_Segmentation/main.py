@@ -39,20 +39,20 @@ def train(loader, model, optimizer, loss_fn, scaler):
 
     for batch_ind, (data, targets) in enumerate(loop):
         data = data.to(device)
-        targets = targets.float().unsqueeze(1).to(device)  # //TODO: delete float()
+        targets = targets.float().unsqueeze(1).to(device)
 
-        with torch.cuda.amp.autocast():  # //TODO: Do this without this
+        with torch.cuda.amp.autocast():
             prediction = model(data)
             loss = loss_fn(prediction, targets)
 
         # Backward
-        optimizer.zero_grad()  # //TODO: Do this in the old way
+        optimizer.zero_grad()
         scaler.scale(loss).backward()
         scaler.step(optimizer)
         scaler.update()
 
         # update tqdm loop
-        loop.set_postfix(loss=loss.item())  # //TODO: Why?
+        loop.set_postfix(loss=loss.item())
 
 
 def main():
