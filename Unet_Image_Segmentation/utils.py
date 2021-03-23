@@ -1,3 +1,7 @@
+import os
+import numpy as np
+import cv2 as cv
+
 import torch
 import torchvision
 from dataset import SegmentationDataset
@@ -53,10 +57,15 @@ def chack_accuracy(loader, model, device="cuda"):
 
 
 def save_prediction_as_imgs(loader, model, batches=3, folder="saved_images/", device="cuda"):
+    print("=> saving Images ... ")
     model.eval()
     for ind, (x, y) in enumerate(loader):
+
         x = x.to(device)
         y = y.to(device)
+
+        print(x.size())
+        print(y.size())
 
         with torch.no_grad():
             preds = torch.sigmoid(model(x))
@@ -65,7 +74,27 @@ def save_prediction_as_imgs(loader, model, batches=3, folder="saved_images/", de
         torchvision.utils.save_image(
             preds, f"{folder}/pred_{ind}.png"
         )
-        torchvision.utils.save_image(y.unsqueeze(1), f"{folder}/img_{ind}.png")
+        grid = torchvision.utils.make_grid(x, nrow=8)
+        torchvision.utils.save_image(y.unsqueeze(1), f"{folder}/mask_{ind}.png")
+        torchvision.utils.save_image(grid, f"{folder}/img_{ind}.png")
+        save_markedImage(ind)
         model.train()
         if ind == batches:
             break
+
+def save_markedImage(ind, folder="saved_images/"):
+    img_name = f"img_{ind}.png"
+    mask_name = f"pred_{ind}.png"
+
+    img = cv.imread(os.path.join(folder, img_name), cv.IMREAD_UNCHANGED)
+    mask = cv.imread(os.path.join(folder, mask_name), cv.IMREAD_UNCHANGED)
+    mask = cv.cvtColor(mask, cv.COLOR_BGR2GRAY)
+
+    img_mark = np.ones(img.shape)
+    img_mark[:, :, 0:3] = np.random.randint(0, 256, (3,))
+
+    fg = cv.bitwise_or(src1=img_mark, src2=img_mark, mask=mask)
+    fg = fg.astype(np.uint8)
+
+    img_final = cv.addWeighted(src1=img, alpha=1, src2=fg, beta=0.8, gamma=1)
+    cv.imwrite(folder+f"color_{ind}.png", img_final)
