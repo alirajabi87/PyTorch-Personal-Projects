@@ -9,6 +9,7 @@ from sklearn.metrics import accuracy_score
 import os
 import time
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 
 def deploy_model(model, dataset, device, num_classes=2, sanity_check=False):
@@ -44,33 +45,53 @@ def main():
         model.load_state_dict(torch.load("./models/weights.pt"))
         model.eval()
 
-    path = "../Data/histopathologic-cancer/"
+    path = "../../Data/histopathologic-cancer/"
     transform = transforms.Compose([transforms.ToTensor()])
 
-    data = HistoCancerDataset(data_dir=path, transform=transform, data_type="train")
+    data = HistoCancerDataset(data_dir=path, transform=transform, data_type="test")
     data.transform = data.transformType(Datatype="validation")
 
-    _, val_data = data.train_test_split(data)
+    # _, val_data = data.train_test_split(data)
     # data.transform = data.transformType(Datatype="validation")
 
-    print(len(val_data))
-    y_out, y_gt = deploy_model(model, dataset=val_data, device=device, sanity_check=False)
+    print(len(data))
+    y_out, y_gt = deploy_model(model, dataset=data, device=device, sanity_check=False)
     print(y_out.shape, y_gt.shape)
 
-    y_pred = np.argmax(y_out, axis=1)
-    print(y_pred.shape)
-    acc = accuracy_score(y_pred=y_pred, y_true=y_gt)
-    print(f"accuracy: {acc*100:.2f}%")
+    preds = np.exp(y_out[:, 1])
 
-    grid_size = 4
+    # # y_pred = np.argmax(y_out, axis=1)
+    # print(y_pred.shape)
+    # acc = accuracy_score(y_pred=y_pred, y_true=y_gt)
+    # print(f"accuracy: {acc*100:.2f}%")
+
+    # grid_size = 4
     # rand_inds = np.random.randint(0, len(data), grid_size)
+    #
+    # x_grid_test = [data[i][0] for i in rand_inds]
+    # y_grid_test = [data[i][1] for i in rand_inds]
+    #
+    # x_grid_test = make_grid(x_grid_test, nrow=4, padding=2)
+    # plt.rcParams['figure.figsize'] = (10., 5)
+    # data.showImage(x_grid_test, y_grid_test)
 
-    x_grid_test = [data[i][0] for i in range(grid_size)]
-    y_grid_test = [data[i][1] for i in range(grid_size)]
+    path = "../../Data/histopathologic-cancer/sample_submission.csv"
+    df = pd.read_csv(path)
+    ids_list = list(df.id)
 
-    x_grid_test = make_grid(x_grid_test, nrow=4, padding=2)
-    plt.rcParams['figure.figsize'] = (10., 5)
-    data.showImage(x_grid_test, y_grid_test)
+    pred_list = [p for p in preds]
+    filenames = [os.path.basename(data.full_names[i])[:-4] for i in range(len(data))]
+    pred_dic = dict((key, value) for (key, value) in
+                   zip(filenames, pred_list))
+    pred_list_sub = [pred_dic[id_] for id_ in ids_list]
+    submission_df = pd.DataFrame({'id':ids_list, 'label':pred_list_sub})
+    if not os.path.exists("./Submissions/"):
+        os.mkdir("./Submissions/")
+        print("submissions folder created!")
+
+    path2Submission = "./Submissions/submission.csv"
+    submission_df.to_csv(path2Submission, header=True, index=False)
+    print(df.head())
 
 
 if __name__ == '__main__':
