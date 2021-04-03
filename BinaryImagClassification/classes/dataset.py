@@ -24,14 +24,14 @@ class CheckandDraw:
         df['label'].hist()
         plt.show()
 
-    def drawPictures(self, df, nrows, ncols, info=True):
+    def drawPictures(self, df, nrows, ncols, info=True, data_type="train"):
         malignantIds = df.loc[df['label'] == 1]['id'].values
         plt.rcParams['figure.figsize'] = (nrows * ncols + 1.0, nrows * ncols + 1.0)
         plt.subplots_adjust(wspace=0, hspace=0)
         nrows, ncols = nrows, ncols
 
         for i, id in enumerate(malignantIds[:nrows * ncols]):
-            full_filename = os.path.join(self.path + "train/", id + ".tif")
+            full_filename = os.path.join(self.path, data_type + "/", id + ".tif")
             # if os.path.isfile(full_filename):
             #     print("found the file")
             # else:
@@ -62,7 +62,7 @@ class HistoCancerDataset(Dataset):
         self.full_names = [os.path.join(path2data, file) for file in filenames]
         self.transform = transform
 
-        df = pd.read_csv(os.path.join(data_dir, "train_labels.csv"))
+        df = pd.read_csv(os.path.join(data_dir, data_type+"_labels.csv"))
         df.set_index('id', inplace=True)
 
         self.labels = [df.loc[filename[:-4]].values[0] for
@@ -118,7 +118,7 @@ class HistoCancerDataset(Dataset):
 
 if __name__ == '__main__':
     path = "../../Data/histopathologic-cancer/"
-    df = pd.read_csv(os.path.join(path, "train_labels.csv"))
+    df = pd.read_csv(os.path.join(path, "test_labels.csv"))
 
     chacker = CheckandDraw()
     chacker.drawPictures(df, 4, 4, info=True)

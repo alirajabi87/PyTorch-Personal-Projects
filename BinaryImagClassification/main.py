@@ -27,7 +27,7 @@ def main():
 
     # Model
 
-    params_model = dict(input_shape=(3, 96, 96), initial_filter=8, num_hidden_fc=100,
+    params_model = dict(input_shape=(3, 96, 96), initial_filter=16, num_hidden_fc=100,
                         num_classes=2, dropout_rate=0.25)
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     model = Net(params_model).to(device)
@@ -37,10 +37,10 @@ def main():
     criterion = nn.NLLLoss()
     optimizer = optim.Adam(model.parameters(), lr=3e-4)
     lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5,
-                                                        patience=20, verbose=1)
+                                                        patience=15, verbose=1)
 
     params_train = dict(
-        num_epochs=100,
+        num_epochs=60,
         loss_func=criterion,
         optimizer=optimizer,
         train_dl=train_loader,
@@ -52,22 +52,12 @@ def main():
 
     model, loss_history, metric_history = train_val(model, params_train)
     num_epochs = params_train["num_epochs"]
-    plt.title("Train_val Loss")
-    plt.plot(range(1, num_epochs+1), loss_history["train"], label="train loss")
-    plt.plot(range(1,num_epochs+1), loss_history["val"], label="val loss")
-    plt.ylabel("Loss")
-    plt.xlabel("epoch")
-    plt.legend()
-    plt.show()
 
-    plt.title("Train_val accuracy")
-    plt.plot(range(1, num_epochs + 1), metric_history["train"], label="train loss")
-    plt.plot(range(1, num_epochs + 1), metric_history["val"], label="val loss")
-    plt.ylabel("Loss")
-    plt.xlabel("epoch")
-    plt.legend()
-    plt.show()
+    plotResults("Train_val Loss", num_epochs, loss_history,
+                "Loss", "epoch", "train loss", "val loss")
 
+    plotResults("Train_val accuracy", num_epochs, metric_history,
+                "Accuracy", "epoch", "train acc", "val acc")
 
 
 if __name__ == '__main__':

@@ -4,6 +4,8 @@ from copy import deepcopy
 from .dataset import HistoCancerDataset
 from torchvision.transforms import transforms
 
+import matplotlib.pyplot as plt
+import os
 
 def get_lr(opt):
     for param in opt.param_groups:
@@ -63,9 +65,18 @@ def train_val(model, param):
     lr_scheduler = param["lr_scheduler"]
     path2weights = param["path2weights"]
 
+
+
     # history of loss values in each epoch
     loss_history = dict(train=[], val=[])
     metric_history = dict(train=[], val=[])
+
+    # Continue the training
+
+    if os.path.exists(path2weights):
+        print(" ==> loading model ...")
+        model.load_state_dict(torch.load(path2weights))
+
     best_model_weight = deepcopy(model.state_dict())
 
     # initializing loss value to inf
@@ -115,3 +126,11 @@ def train_val(model, param):
     model.load_state_dict(best_model_weight)
     return model, loss_history, metric_history
 
+def plotResults(title, num_epochs, df, xLabel, yLabel, train_Label, val_Label):
+    plt.title(title)
+    plt.plot(range(1, num_epochs + 1), df["train"], label=train_Label)
+    plt.plot(range(1, num_epochs + 1), df["val"], label=val_Label)
+    plt.ylabel(yLabel)
+    plt.xlabel(xLabel)
+    plt.legend()
+    plt.show()
