@@ -307,7 +307,7 @@ def NonMaxSuppression(bbox_pred, obj_thres=0.5, nms_thres=0.5):
         detections = detections[~supp_inds]
         if bbox_nms:
             output[ind] = torch.stack(bbox_nms)
-            output[ind] = xywh2xyxy(output[ind])
+            output[ind] = xyxy2xywh(output[ind])
         return output
 
 
@@ -320,7 +320,7 @@ def xywh2xyxy(xywh):
     return xyxy
 
 
-def xyxyh2xywh(xyxy, img_size=416):
+def xyxy2xywh(xyxy, img_size=416):
     xywh = torch.zeros(xyxy.shape[0], 6)
     xywh[:, 2] = (xyxy[:, 0] + xyxy[:, 2]) / 2. / img_size
     xywh[:, 3] = (xyxy[:, 1] + xyxy[:, 3]) / 2. / img_size
@@ -343,7 +343,3 @@ def bbox_iou(box1, box2):
     b2_area = (b2_x2 - b2_x1 + 1.0) * (b2_y2 - b2_y1 + 1.0)
     iou = inter_area / (b1_area + b2_area - inter_area + 1e-16)
     return iou
-
-
-def bbox_iou():
-    pass
